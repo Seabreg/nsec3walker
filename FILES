@@ -1,0 +1,7 @@
+FILES
+Makefile
+collect
+unhash
+query
+randomhashes.c
+dicthashes.c

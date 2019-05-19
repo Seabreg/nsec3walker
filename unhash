@@ -1,0 +1,49 @@
+#!/usr/bin/env python
+
+import subprocess
+import sys
+
+dictionary = "/usr/share/dict/words"
+if len(sys.argv) >= 2:
+  dictionary = sys.argv[1]
+
+name = set()
+
+salt = 0
+
+for line in sys.stdin:
+  y = line.strip().split()
+  if y[0] == "domain":
+    domain = y[1]
+  elif y[0] == "salt":
+    salt = y[1]
+  elif y[0] == "iterations":
+    iterations = y[1]
+  elif y[0] == "nexthash":
+    name.add(y[1])
+    name.add(y[2])
+  elif y[0] == "numqueries":
+    print "queries to DNS servers:",y[1]
+  elif y[0] == "numhashes":
+    print "local hash computations during queries:",y[1]
+
+nummatches = 0
+numhashes = 0
+numnames = len(name)
+
+print "names:",numnames
+
+if domain and salt and numnames:
+  dictprocess = subprocess.Popen(["cat",dictionary],stdout=subprocess.PIPE)
+  hashprocess = subprocess.Popen(["./dicthashes",domain,iterations,salt],stdin=dictprocess.stdout,stdout=subprocess.PIPE)
+  for line in hashprocess.stdout:
+    numhashes += 1
+    x = line.strip().split()
+    if x[0] in name:
+      nummatches += 1
+      print x[0],x[1]
+      print "found",nummatches,"private NSEC3 names ("+str((nummatches*100)/numnames)+"%) using",numhashes,"hash computations"
+      sys.stdout.flush()
+      name.remove(x[0])
+
+  hashprocess.terminate()

@@ -1,0 +1,20 @@
+#!/bin/sh
+
+# alternatives:
+#   dig +norecurse +vc +dnssec $1 @$2
+#   dig +norecurse +dnssec $1 @$2
+#     uses UDP instead of TCP
+#     cheaper and more "normal" but broken by some firewalls
+#   drill -o rd -D -t - $1 @$2
+#     works if your dig is too old
+#     but drill needs installation: aptitude install ldnsutils
+#   drill -o rd -D - $1 @$2
+
+dig +norecurse +dnssec $1 @$2 \
+| awk '
+  {
+    if ($4 == "NS") print "ns",tolower($1),tolower($5)
+    gsub(/\..*$/,"",$1)
+    if ($4 == "NSEC3") print "nsec3",tolower($1),tolower($9),tolower($8),tolower($7)
+  }
+'
